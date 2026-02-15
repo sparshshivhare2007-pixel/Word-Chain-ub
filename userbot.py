@@ -2,9 +2,7 @@ import asyncio
 from telethon import TelegramClient, events
 from config import Config
 from userbot_manager import UserBotManager
-from core.parser import GameResponseParser
 from utils.delays import AntiBanDelay
-from utils.logger import logger
 
 # Validate config
 Config.validate()
@@ -27,7 +25,7 @@ async def connect_handler(event):
     session_name = event.pattern_match.group(1).lower()
     user_id = event.sender_id
 
-    session = await manager.get_or_create_session(user_id, session_name)
+    await manager.get_or_create_session(user_id, session_name)
     await event.reply(f"✅ Session '{session_name}' created.")
 
 
@@ -70,10 +68,10 @@ async def play_handler(event):
         session.task.cancel()
 
     session.task = asyncio.create_task(
-        auto_play(event, session, session_name)
+        auto_play(event, session)
     )
 
-    await event.reply(f"▶️ Auto-playing '{session_name}'...")
+    await event.reply(f"▶️ Sending 5-letter words...")
 
 
 # ========================
@@ -93,62 +91,34 @@ async def stop_handler(event):
 
 
 # ========================
-# AUTO PLAY LOGIC
+# AUTO PLAY (SIMPLE MODE)
 # ========================
-async def auto_play(event, session, session_name):
+async def auto_play(event, session):
     try:
-        session.start_new_game(f"{session.user_id}_{session_name}")
+        session.start_new_game("simple_mode")
 
-        for turn in range(1, Config.MAX_GUESSES + 1):
+        for _ in range(Config.MAX_GUESSES):
             guess = session.solver.get_next_guess(session.game_state)
 
-            await AntiBanDelay.human_typing(len(guess))
-            await event.reply(f"🔤 Turn {turn}: `{guess}`")
+            # Send only 5-letter word
+            await event.reply(guess)
 
-            # Demo feedback (replace with real parsing later)
-            feedback = simulate_feedback(guess)
+            # Fake update so solver changes next word
+            from core.state import LetterState
+            fake_states = [LetterState.ABSENT] * 5
 
-            result = GameResponseParser.parse_emoji_grid(
-                feedback, guess, turn
+            session.game_state.add_guess(
+                type("GuessResult", (), {
+                    "word": guess,
+                    "states": fake_states
+                })
             )
 
-            if not result:
-                await event.reply("Parse error.")
-                break
-
-            session.update_game(result)
-
-            if result.is_win():
-                await event.reply(f"🎉 Solved in {turn} turns!")
-                session.finish_game(guess)
-                return
-
-            await AntiBanDelay.between_actions()
-
-        await event.reply("❌ Failed to solve.")
-        session.finish_game()
+            await asyncio.sleep(2)
 
     except asyncio.CancelledError:
         await event.reply("Game stopped.")
         session.active = False
-
-
-# ========================
-# DEMO FEEDBACK (REMOVE LATER)
-# ========================
-def simulate_feedback(guess):
-    target = "crane"
-    states = []
-
-    for i, char in enumerate(guess):
-        if char == target[i]:
-            states.append("🟩")
-        elif char in target:
-            states.append("🟨")
-        else:
-            states.append("⬛")
-
-    return "".join(states)
 
 
 # ========================
