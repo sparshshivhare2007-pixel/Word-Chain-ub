@@ -5,27 +5,38 @@ load_dotenv()
 
 
 class Config:
-    # 🔹 Telethon Credentials (Real Telegram Account)
+    # =========================
+    # TELETHON CREDENTIALS
+    # =========================
     API_ID = int(os.getenv("API_ID", "0"))
     API_HASH = os.getenv("API_HASH", "")
     SESSION_NAME = os.getenv("SESSION_NAME", "wordle_user")
 
-    # 🔹 Paths
+    # =========================
+    # PATHS
+    # =========================
     SESSIONS_DIR = "sessions"
     DATA_DIR = "data"
 
-    # 🔹 Anti-ban Settings
+    # =========================
+    # ANTI-BAN SETTINGS
+    # =========================
     MIN_DELAY = float(os.getenv("MIN_DELAY", "1.5"))
     MAX_DELAY = float(os.getenv("MAX_DELAY", "3.5"))
     COOLDOWN_BETWEEN_GAMES = int(
         os.getenv("COOLDOWN_BETWEEN_GAMES", "120")
     )
 
-    # 🔹 Game Settings
+    # =========================
+    # GAME SETTINGS
+    # =========================
     MAX_GUESSES = 6
     WORD_LENGTH = 5
 
-    # 🔹 Session Safety
+    # =========================
+    # SESSION MANAGEMENT
+    # =========================
+    MAX_SESSIONS_PER_USER = 3
     SESSION_TIMEOUT = 3600  # seconds
 
     @classmethod
